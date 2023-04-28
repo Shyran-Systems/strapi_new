@@ -36,6 +36,7 @@ import {
 } from '@strapi/design-system';
 
 import { ArrowLeft, Plus, Cog } from '@strapi/icons';
+import { useMutation } from 'react-query';
 
 import DynamicTable from '../../components/DynamicTable';
 import AttributeFilter from '../../components/AttributeFilter';
@@ -101,6 +102,14 @@ function ListView({
   const hasDraftAndPublish = contentType.options?.draftAndPublish ?? false;
   const fetchClient = useFetchClient();
   const { post, del } = fetchClient;
+
+  const bulkAction = async ({ query, input }) => {
+    const { data } = await post(query, { ...input });
+
+    return data;
+  };
+
+  const bulkPublishMutation = useMutation(bulkAction);
 
   // FIXME
   // Using a ref to avoid requests being fired multiple times on slug on change
@@ -239,10 +248,74 @@ function ListView({
     return validations;
   };
 
-  const handleBulkPublish = async (selectedEntries) => {
+  const handleConfirmPublishAllData = async (selectedEntries) => {
     const validations = await validateEntriesToPublish(selectedEntries);
-    // TODO: Remove log when we actually do something with the validations
-    console.log(validations);
+
+    if (Object.values(validations.errors).length) {
+      toggleNotification({
+        type: 'warning',
+        title: {
+          id: 'content-manager.listView.validation.errors.title',
+          defaultMessage: 'Action required',
+        },
+        message: {
+          id: 'content-manager.listView.validation.errors.message',
+          defaultMessage:
+            'Please make sure all fields are valid before publishing (required field, min/max character limit, etc.)',
+        },
+      });
+
+      return;
+    }
+
+    bulkPublishMutation.mutate(
+      {
+        query: `/content-manager/collection-types/${contentType.uid}/actions/bulkPublish`,
+        input: { ids: selectedEntries },
+      },
+      {
+        onSuccess() {
+          fetchData(`/content-manager/collection-types/${slug}${params}`);
+          toggleNotification({
+            type: 'success',
+            message: { id: 'content-manager.success.record.publish', defaultMessage: 'Published' },
+          });
+        },
+        onError(error) {
+          toggleNotification({
+            type: 'warning',
+            message: formatAPIError(error),
+          });
+        },
+      }
+    );
+  };
+
+  const handleConfirmUnpublishAllData = (selectedEntries) => {
+    bulkPublishMutation.mutate(
+      {
+        query: `/content-manager/collection-types/${contentType.uid}/actions/bulkUnpublish`,
+        input: { ids: selectedEntries },
+      },
+      {
+        onSuccess() {
+          fetchData(`/content-manager/collection-types/${slug}${params}`);
+          toggleNotification({
+            type: 'success',
+            message: {
+              id: 'content-manager.success.record.unpublish',
+              defaultMessage: 'Unpublished',
+            },
+          });
+        },
+        onError(error) {
+          toggleNotification({
+            type: 'warning',
+            message: formatAPIError(error),
+          });
+        },
+      }
+    );
   };
 
   useEffect(() => {
@@ -386,7 +459,8 @@ function ListView({
               layout={layout}
               rows={data}
               action={getCreateAction({ variant: 'secondary' })}
-              handleBulkPublish={handleBulkPublish}
+              onConfirmPublishAll={handleConfirmPublishAllData}
+              onConfirmUnpublishAll={handleConfirmUnpublishAllData}
             />
             <PaginationFooter pagination={{ pageCount: pagination?.pageCount || 1 }} />
           </>
@@ -407,6 +481,7 @@ ListView.propTypes = {
   layout: PropTypes.exact({
     components: PropTypes.object.isRequired,
     contentType: PropTypes.shape({
+      uid: PropTypes.string.isRequired,
       attributes: PropTypes.object.isRequired,
       metadatas: PropTypes.object.isRequired,
       info: PropTypes.shape({ displayName: PropTypes.string.isRequired }).isRequired,

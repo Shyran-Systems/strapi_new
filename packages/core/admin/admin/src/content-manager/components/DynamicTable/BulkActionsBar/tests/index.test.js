@@ -21,7 +21,8 @@ describe('BulkActionsBar', () => {
   const requiredProps = {
     selectedEntries: [],
     clearSelectedEntries: jest.fn(),
-    handleBulkPublish: jest.fn(),
+    onConfirmPublishAll: jest.fn(),
+    onConfirmUnpublishAll: jest.fn(),
   };
 
   const TestComponent = (props) => (

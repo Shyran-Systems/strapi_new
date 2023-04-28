@@ -12,7 +12,8 @@ const BulkActionsBar = ({
   onConfirmDeleteAll,
   selectedEntries,
   clearSelectedEntries,
-  handleBulkPublish,
+  onConfirmPublishAll,
+  onConfirmUnpublishAll,
 }) => {
   const { formatMessage } = useIntl();
   const { trackUsage } = useTracking();
@@ -45,10 +46,10 @@ const BulkActionsBar = ({
     <>
       {showPublish && (
         <>
-          <Button variant="tertiary" onClick={() => handleBulkPublish(selectedEntries)}>
+          <Button variant="tertiary" onClick={() => onConfirmPublishAll(selectedEntries)}>
             {formatMessage({ id: 'app.utils.publish', defaultMessage: 'Publish' })}
           </Button>
-          <Button variant="tertiary">
+          <Button variant="tertiary" onClick={() => onConfirmUnpublishAll(selectedEntries)}>
             {formatMessage({ id: 'app.utils.unpublish', defaultMessage: 'Unpublish' })}
           </Button>
         </>
@@ -82,7 +83,8 @@ BulkActionsBar.propTypes = {
   onConfirmDeleteAll: PropTypes.func,
   selectedEntries: PropTypes.array.isRequired,
   clearSelectedEntries: PropTypes.func.isRequired,
-  handleBulkPublish: PropTypes.func.isRequired,
+  onConfirmPublishAll: PropTypes.func.isRequired,
+  onConfirmUnpublishAll: PropTypes.func.isRequired,
 };
 
 export default BulkActionsBar;
