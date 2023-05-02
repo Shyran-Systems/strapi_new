@@ -3,8 +3,10 @@ import PropTypes from 'prop-types';
 import { Button } from '@strapi/design-system';
 import { useTracking } from '@strapi/helper-plugin';
 import { useIntl } from 'react-intl';
+import { useSelector } from 'react-redux';
 
 import ConfirmDialogDeleteAll from '../ConfirmDialogDeleteAll';
+import { listViewDomain } from '../../../pages/ListView/selectors';
 
 const BulkActionsBar = ({
   showPublish,
@@ -16,9 +18,16 @@ const BulkActionsBar = ({
 }) => {
   const { formatMessage } = useIntl();
   const { trackUsage } = useTracking();
+  const { data } = useSelector(listViewDomain());
 
   const [isConfirmButtonLoading, setIsConfirmButtonLoading] = useState(false);
   const [showConfirmDeleteAll, setShowConfirmDeleteAll] = useState(false);
+
+  const selectedEntriesObjects = data.filter((entry) => selectedEntries.includes(entry.id));
+  const showPublishButton =
+    showPublish && selectedEntriesObjects.some((entry) => !entry.publishedAt);
+  const showUnpublishButton =
+    showPublish && selectedEntriesObjects.some((entry) => entry.publishedAt);
 
   const handleToggleShowDeleteAllModal = () => {
     if (!showConfirmDeleteAll) {
@@ -43,15 +52,15 @@ const BulkActionsBar = ({
 
   return (
     <>
-      {showPublish && (
-        <>
-          <Button variant="tertiary" onClick={() => handleBulkPublish(selectedEntries)}>
-            {formatMessage({ id: 'app.utils.publish', defaultMessage: 'Publish' })}
-          </Button>
-          <Button variant="tertiary">
-            {formatMessage({ id: 'app.utils.unpublish', defaultMessage: 'Unpublish' })}
-          </Button>
-        </>
+      {showPublishButton && (
+        <Button variant="tertiary" onClick={() => handleBulkPublish(selectedEntries)}>
+          {formatMessage({ id: 'app.utils.publish', defaultMessage: 'Publish' })}
+        </Button>
+      )}
+      {showUnpublishButton && (
+        <Button variant="tertiary">
+          {formatMessage({ id: 'app.utils.unpublish', defaultMessage: 'Unpublish' })}
+        </Button>
       )}
       {showDelete && (
         <>

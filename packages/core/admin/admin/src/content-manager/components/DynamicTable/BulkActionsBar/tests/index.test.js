@@ -12,6 +12,15 @@ jest.mock('@strapi/helper-plugin', () => ({
   }),
 }));
 
+jest.mock('react-redux', () => ({
+  useSelector: () => ({
+    data: [
+      { id: 1, publishedAt: null },
+      { id: 2, publishedAt: '2023-01-01T10:10:10.408Z' },
+    ],
+  }),
+}));
+
 jest.mock('../../../../../shared/hooks', () => ({
   ...jest.requireActual('../../../../../shared/hooks'),
   useInjectionZone: () => [],
@@ -19,7 +28,7 @@ jest.mock('../../../../../shared/hooks', () => ({
 
 describe('BulkActionsBar', () => {
   const requiredProps = {
-    selectedEntries: [],
+    selectedEntries: [1, 2],
     clearSelectedEntries: jest.fn(),
     handleBulkPublish: jest.fn(),
   };
@@ -83,6 +92,18 @@ describe('BulkActionsBar', () => {
       fireEvent.click(screen.getByRole('button', { name: /confirm/i }));
     });
 
-    expect(mockConfirmDeleteAll).toHaveBeenCalledWith([]);
+    expect(mockConfirmDeleteAll).toHaveBeenCalledWith([1, 2]);
+  });
+
+  it('should not show publish button if selected entries are all published', () => {
+    setup({ showPublish: true, selectedEntries: [2] });
+
+    expect(screen.queryByRole('button', { name: /\bPublish\b/ })).not.toBeInTheDocument();
+  });
+
+  it('should not show unpublish button if selected entries are all unpublished', () => {
+    setup({ showPublish: true, selectedEntries: [1] });
+
+    expect(screen.queryByRole('button', { name: /\bUnpublish\b/ })).not.toBeInTheDocument();
   });
 });
